@@ -249,12 +249,37 @@ function App() {
   const hasPremiumInfo = Boolean(premiumInfo.expiresAt || premiumInfo.balanceDays);
   const canProceedSetup = Boolean(characterName.trim()) && Boolean(world.trim()) && hasPremiumInfo;
 
+  // Refetch preço do mercado quando o mundo muda no estágio "calc"
+  useEffect(() => {
+    if (stage !== "calc" || !world.trim()) return;
+
+    const refetchPrice = async () => {
+      setMarketLoading(true);
+      try {
+        const data = await getTibiaCoinPrice(world);
+        setMarketPrice(data);
+        setMarketError(data.success ? null : data.error ?? "Preço indisponível.");
+      } catch (error) {
+        setMarketPrice(null);
+        setMarketError(error instanceof Error ? error.message : "Erro ao buscar preço.");
+      } finally {
+        setMarketLoading(false);
+      }
+    };
+
+    refetchPrice();
+  }, [world, stage]);
+
   const effectiveUnitPrice = useMemo(() => {
+    // Prefer market price when available; fall back to manual if not
+    if (marketPrice?.success) return marketPrice.unitPrice;
     if (manualUnitPrice > 0) return manualUnitPrice;
-    return marketPrice?.success ? marketPrice.unitPrice : 0;
+    return 0;
   }, [manualUnitPrice, marketPrice]);
 
-  const showManualPrice = Boolean(world.trim()) && (marketPrice ? !marketPrice.success : false);
+  // Mostrar campo de preço manual quando o usuário já inseriu um manual ou quando
+  // o preço de mercado não está disponível
+  const showManualPrice = Boolean(world.trim()) && (manualUnitPrice > 0 || (marketPrice ? !marketPrice.success : true));
 
   const targetGold = effectiveUnitPrice * COIN_TARGET;
   const farmGoal = useMemo(
@@ -810,8 +835,8 @@ function App() {
         }
       }
 
-      const source = manualUnitPrice > 0 ? "manual" : latestMarket?.success ? "market" : null;
-      const unitPrice = manualUnitPrice > 0 ? manualUnitPrice : latestMarket?.unitPrice ?? 0;
+      const source = latestMarket?.success ? "market" : manualUnitPrice > 0 ? "manual" : null;
+      const unitPrice = latestMarket?.success ? latestMarket.unitPrice ?? 0 : manualUnitPrice > 0 ? manualUnitPrice : 0;
 
       if (source && unitPrice > 0) {
         appendPriceHistory({
@@ -878,8 +903,8 @@ function App() {
         }
       }
 
-      const source = manualUnitPrice > 0 ? "manual" : latestMarket?.success ? "market" : null;
-      const unitPrice = manualUnitPrice > 0 ? manualUnitPrice : latestMarket?.unitPrice ?? 0;
+      const source = latestMarket?.success ? "market" : manualUnitPrice > 0 ? "manual" : null;
+      const unitPrice = latestMarket?.success ? latestMarket.unitPrice ?? 0 : manualUnitPrice > 0 ? manualUnitPrice : 0;
 
       if (source && unitPrice > 0) {
         appendPriceHistory({
