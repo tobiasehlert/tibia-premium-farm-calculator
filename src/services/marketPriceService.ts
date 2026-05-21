@@ -1,4 +1,5 @@
 import type { MarketPriceResult } from "../types/tibia";
+import { getTibiaCoinPriceFromTibiaPrice } from "./tibiaPricesScraperService";
 
 interface ItemMetadata {
   id: number;
@@ -56,8 +57,13 @@ export const getTibiaCoinPrice = async (world: string): Promise<MarketPriceResul
   const now = new Date().toISOString();
 
   try {
-    // Fontes possíveis: TibiaPrices, Intibia, TibiaTrade.
-    // Atualmente usando tibiamarket.top por ser API pública.
+    // Tentar TibiaPrice primeiro (scraping)
+    const tibiaPriceResult = await getTibiaCoinPriceFromTibiaPrice(world);
+    if (tibiaPriceResult.success) {
+      return tibiaPriceResult;
+    }
+
+    // Fallback: usar tibiamarket.top API
     const itemId = await resolveTibiaCoinId();
     const response = await fetch(
       `${API_BASE}/market_values?server=${encodeURIComponent(world)}&item_ids=${itemId}&limit=1`
