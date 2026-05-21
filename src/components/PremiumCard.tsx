@@ -36,17 +36,7 @@ export const PremiumCard = ({ premiumInfo, className }: PremiumCardProps) => {
       <div className="card-content premium-content">
         <div className="premium-hero">
           <div className="stat-label">Tempo Restante</div>
-          <div
-            className="big-number"
-            style={{
-              color:
-                statusTone === "success"
-                  ? "#22c55e"
-                  : statusTone === "warning"
-                    ? "#f59e0b"
-                    : "#ef4444"
-            }}
-          >
+          <div className="big-number" style={{ color: statusTone === "success" ? "var(--success)" : statusTone === "warning" ? "var(--warning)" : "var(--danger)" }}>
             {timeLabel}
           </div>
         </div>

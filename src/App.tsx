@@ -273,12 +273,52 @@ function App() {
     : 0;
   const goldMissing = Math.max(0, targetGold - currentGold);
   const goldPerDay = farmGoal.goldPerDay;
+  const premiumRemainingLabel = premiumInfo.expiresAt
+    ? (() => {
+        const remaining = calculateTimeRemaining(premiumInfo.expiresAt!);
+        return `${remaining.days}d ${remaining.hours}h`;
+      })()
+    : premiumInfo.balanceDays
+      ? `${premiumInfo.balanceDays} dias`
+      : "—";
   const huntInsights = useMemo(
     () => calculateHuntInsights(huntHistory, goldMissing, farmGoal.daysRemaining),
     [huntHistory, goldMissing, farmGoal.daysRemaining]
   );
   const effectiveGoldPerHour = goldPerHour > 0 ? goldPerHour : huntInsights.averageProfitPerHour;
   const hoursPerDay = effectiveGoldPerHour > 0 ? goldPerDay / effectiveGoldPerHour : 0;
+  const dashboardHighlights = [
+    {
+      label: "Saldo Atual",
+      value: formatGold(currentGold),
+      hint: progressPercent > 0 ? `${progressPercent}% da meta` : "Aguardando entrada"
+    },
+    {
+      label: "Tibia Coins",
+      value: `${COIN_TARGET} TC`,
+      hint: effectiveUnitPrice > 0 ? formatGold(effectiveUnitPrice) : "Preço não definido"
+    },
+    {
+      label: "Meta da Premium",
+      value: targetGold > 0 ? formatGold(targetGold) : "—",
+      hint: goldMissing > 0 ? `${formatGold(goldMissing)} faltando` : "Meta concluída"
+    },
+    {
+      label: "Premium Time",
+      value: premiumRemainingLabel,
+      hint: premiumInfo.expiresAt ? "Tempo restante" : "Saldo em dias"
+    },
+    {
+      label: "Farm Diário",
+      value: formatGold(goldPerDay),
+      hint: effectiveGoldPerHour > 0 ? `${formatGold(effectiveGoldPerHour)}/h` : "Sem taxa por hora"
+    },
+    {
+      label: "Gold Necessário",
+      value: formatGold(goldMissing),
+      hint: hoursPerDay > 0 ? `${hoursPerDay.toFixed(1)} h/dia` : "Sem ritmo calculado"
+    }
+  ];
 
   const guestCoinHistory = useMemo(
     () =>
@@ -919,6 +959,43 @@ function App() {
         {!authBootstrapping && !isAuthenticated && (
           <AccountRequiredBanner onLogin={() => openAuth("login")} onRegister={() => openAuth("register")} />
         )}
+
+        <section className="dashboard-overview" aria-label="Resumo geral da calculadora">
+          <div className="card dashboard-hero card-featured">
+            <div className="dashboard-hero-copy">
+              <span className="badge header-badge">Tibia Premium Farm Dashboard</span>
+              <h2 className="dashboard-hero-title">Premium Account Calculator</h2>
+              <p className="dashboard-hero-subtitle">
+                Painel escuro e organizado para acompanhar saldo, Premium Time, Tibia Coins e a meta da próxima premium.
+              </p>
+            </div>
+
+            <div className="dashboard-hero-panel">
+              <div className="dashboard-hero-panel__row">
+                <span className="stat-label">Progresso da Jornada</span>
+                <strong className="dashboard-hero-value">{progressPercent}%</strong>
+              </div>
+              <div className="progress-bar dashboard-progress-bar" aria-hidden="true">
+                <div className="progress-bar__fill progress-primary" style={{ width: `${progressPercent}%` }} />
+              </div>
+              <div className="dashboard-hero-panel__meta">
+                <span>{goldMissing > 0 ? `${formatGold(goldMissing)} faltando` : "Meta concluída"}</span>
+                <span>{premiumRemainingLabel}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="dashboard-kpi-grid">
+            {dashboardHighlights.map((item) => (
+              <article key={item.label} className="card dashboard-kpi-card">
+                <span className="stat-label">{item.label}</span>
+                <strong className="dashboard-kpi-value">{item.value}</strong>
+                <span className="dashboard-kpi-hint">{item.hint}</span>
+              </article>
+            ))}
+          </div>
+        </section>
+
         {stage === "setup" ? (
           <div className="setup-view">
             <div className="setup-stack">
@@ -1156,8 +1233,8 @@ function App() {
                               <RadialBar
                                 dataKey="value"
                                 cornerRadius={999}
-                                fill={farmGoal.hasEnoughGold ? "#22c55e" : "#38bdf8"}
-                                background={{ fill: "rgba(148, 163, 184, 0.15)" }}
+                                fill={farmGoal.hasEnoughGold ? "var(--success)" : "var(--primary)"}
+                                background={{ fill: "rgba(61, 42, 77, 0.45)" }}
                               />
                             </RadialBarChart>
                           </ResponsiveContainer>
@@ -1282,22 +1359,22 @@ function App() {
                                 layout="vertical"
                                 margin={{ top: 10, right: 20, left: 10, bottom: 0 }}
                               >
-                                <CartesianGrid stroke="rgba(148, 163, 184, 0.1)" horizontal={false} />
-                                <XAxis type="number" tick={{ fill: "#94a3b8" }} />
-                                <YAxis type="category" dataKey="name" tick={{ fill: "#94a3b8" }} width={90} />
+                                <CartesianGrid stroke="var(--border)" opacity={0.35} horizontal={false} />
+                                <XAxis type="number" tick={{ fill: "var(--text-muted)" }} />
+                                <YAxis type="category" dataKey="name" tick={{ fill: "var(--text-muted)" }} width={90} />
                                 <Tooltip
                                   formatter={formatTooltipValue}
                                   contentStyle={{
-                                    background: "#0f172a",
-                                    borderRadius: "12px",
-                                    border: "1px solid rgba(148, 163, 184, 0.2)",
-                                    color: "#f8fafc"
+                                    background: "var(--bg-card)",
+                                    borderRadius: "14px",
+                                    border: "1px solid var(--border)",
+                                    color: "var(--text-main)"
                                   }}
                                 />
                                 <Bar dataKey="value" radius={[8, 8, 8, 8]}>
-                                  <Cell fill="#22c55e" />
-                                  <Cell fill="#f97316" />
-                                  <Cell fill="#38bdf8" />
+                                  <Cell fill="var(--success)" />
+                                  <Cell fill="var(--danger)" />
+                                  <Cell fill="var(--primary)" />
                                 </Bar>
                               </BarChart>
                             </ResponsiveContainer>
@@ -1332,15 +1409,15 @@ function App() {
                         <div className="chart-wrapper chart-wrapper--line">
                           <ResponsiveContainer width="100%" height={230}>
                             <LineChart data={priceHistory} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                              <CartesianGrid stroke="rgba(148, 163, 184, 0.1)" />
+                              <CartesianGrid stroke="var(--border)" opacity={0.35} />
                               <XAxis
                                 dataKey="timestamp"
-                                tick={{ fill: "#94a3b8" }}
+                                tick={{ fill: "var(--text-muted)" }}
                                 tickFormatter={(value) =>
                                   new Date(value).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })
                                 }
                               />
-                              <YAxis tick={{ fill: "#94a3b8" }} />
+                              <YAxis tick={{ fill: "var(--text-muted)" }} />
                               <Tooltip
                                 formatter={formatTooltipValue}
                                 labelFormatter={(value) =>
@@ -1352,16 +1429,16 @@ function App() {
                                   })
                                 }
                                 contentStyle={{
-                                  background: "#0f172a",
-                                  borderRadius: "12px",
-                                  border: "1px solid rgba(148, 163, 184, 0.2)",
-                                  color: "#f8fafc"
+                                  background: "var(--bg-card)",
+                                  borderRadius: "14px",
+                                  border: "1px solid var(--border)",
+                                  color: "var(--text-main)"
                                 }}
                               />
                               <Line
                                 type="monotone"
                                 dataKey="unitPrice"
-                                stroke="#38bdf8"
+                                stroke="var(--primary)"
                                 strokeWidth={3}
                                 dot={false}
                               />
