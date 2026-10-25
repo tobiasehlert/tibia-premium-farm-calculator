@@ -18,7 +18,7 @@ Aplicação full-stack para calcular o gold necessário para comprar 250 Tibia C
 ## Funcionalidades
 
 - Cadastro e login com validações
-- Gestão de personagens
+- Gestão de personagens com consulta pela TibiaData API v5
 - Cadastro e histórico de Premium Time
 - Histórico de preço de Tibia Coin
 - Metas de farm com gráficos

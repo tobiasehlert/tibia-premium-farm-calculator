@@ -30,10 +30,16 @@ export const getCharacterInfo = async (characterName: string): Promise<Character
   }
 
   const response = await fetch(
-    `https://api.tibiadata.com/v4/character/${encodeURIComponent(trimmedName)}`
+    `https://api.tibiadata.com/v5/character/${encodeURIComponent(trimmedName)}`
   );
 
   if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error("Personagem não encontrado.");
+    }
+    if (response.status === 502) {
+      throw new Error("Serviço de dados do Tibia indisponível no momento. Tente novamente mais tarde.");
+    }
     throw new Error("Falha ao buscar personagem.");
   }
 
